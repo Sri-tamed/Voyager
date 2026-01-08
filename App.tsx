@@ -106,7 +106,7 @@ const App: React.FC = () => {
   const renderView = () => {
     switch(currentView) {
       case 'home': return <HomeView status={status} onEmergencyTrigger={enterEmergency} userLocation={userLocation} contacts={contacts} />;
-      case 'map': return <MapView userLocation={userLocation} status={status} />;
+      case 'map': return <MapView userLocation={userLocation} status={status} contacts={contacts} />;
       case 'emergency': return <EmergencyView onExit={exitEmergency} userLocation={userLocation} contacts={contacts} />;
       case 'profile': return <ProfileView contacts={contacts} setContacts={setContacts} />;
       case 'settings': return <SettingsView />;

@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-import { Shield, AlertTriangle, Phone, Volume2, ShieldAlert, MessageCircle, X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Shield, AlertTriangle, Phone, Volume2, ShieldAlert, MessageCircle, X, Share2, Loader2 } from 'lucide-react';
 import { Location, EmergencyContact } from '../types';
 
 interface EmergencyViewProps {
@@ -13,6 +13,9 @@ const EmergencyView: React.FC<EmergencyViewProps> = ({ onExit, userLocation, con
   const [countdown, setCountdown] = useState(30);
   const [holdProgress, setHoldProgress] = useState(0);
   const [isHolding, setIsHolding] = useState(false);
+  const [isAutoSharing, setIsAutoSharing] = useState(false);
+  // Using any for the interval ref to avoid NodeJS namespace issues in the browser
+  const shareTimerRef = useRef<any>(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -21,11 +24,34 @@ const EmergencyView: React.FC<EmergencyViewProps> = ({ onExit, userLocation, con
     return () => clearInterval(timer);
   }, []);
 
+  // Recurring Location Sharing Logic
+  useEffect(() => {
+    if (isAutoSharing && userLocation && contacts.length > 0) {
+      const shareLocation = () => {
+        const primary = contacts[0];
+        const locationLink = `https://www.google.com/maps?q=${userLocation.lat},${userLocation.lng}`;
+        const message = encodeURIComponent(`🚨 VOYAGER AUTO-ALERT: My live position is updated. ${locationLink}`);
+        const whatsappUrl = `https://wa.me/${primary.phone.replace(/\D/g, '')}?text=${message}`;
+        window.open(whatsappUrl, '_blank');
+      };
+
+      // Immediate first share
+      shareLocation();
+
+      // Set recurring interval (every 60 seconds)
+      shareTimerRef.current = setInterval(shareLocation, 60000);
+    } else {
+      if (shareTimerRef.current) clearInterval(shareTimerRef.current);
+    }
+
+    return () => {
+      if (shareTimerRef.current) clearInterval(shareTimerRef.current);
+    };
+  }, [isAutoSharing, userLocation, contacts]);
+
   useEffect(() => {
     let interval: any;
     if (isHolding) {
-      // 5 second hold duration: 5000ms / 50ms = 100 intervals. 
-      // Increment by 1 each 50ms to reach 100% in exactly 5 seconds.
       interval = setInterval(() => {
         setHoldProgress(prev => {
           if (prev >= 100) {
@@ -36,7 +62,6 @@ const EmergencyView: React.FC<EmergencyViewProps> = ({ onExit, userLocation, con
         });
       }, 50);
     } else {
-      // Fast reset when let go
       setHoldProgress(0);
     }
     return () => clearInterval(interval);
@@ -74,7 +99,17 @@ const EmergencyView: React.FC<EmergencyViewProps> = ({ onExit, userLocation, con
       </div>
 
       <div className="relative w-full flex-1 mt-6 mb-4 overflow-y-auto no-scrollbar">
-        <h3 className="text-[10px] uppercase tracking-[0.2em] font-black text-white/40 mb-3 px-2">Trusted Contacts</h3>
+        <div className="flex items-center justify-between px-2 mb-3">
+           <h3 className="text-[10px] uppercase tracking-[0.2em] font-black text-white/40">Trusted Contacts</h3>
+           <button 
+             onClick={() => setIsAutoSharing(!isAutoSharing)}
+             className={`flex items-center gap-2 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all ${isAutoSharing ? 'bg-emerald-500 text-white border-emerald-400 animate-pulse' : 'bg-white/5 text-white/40 border-white/10'}`}
+           >
+             {isAutoSharing ? <Loader2 size={10} className="animate-spin" /> : <Share2 size={10} />}
+             {isAutoSharing ? 'Recurring Live Feed Active' : 'Enable Live Feed'}
+           </button>
+        </div>
+
         <div className="space-y-3">
           {contacts.length > 0 ? contacts.map((contact) => (
             <div key={contact.id} className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-3 backdrop-blur-md">
@@ -124,7 +159,7 @@ const EmergencyView: React.FC<EmergencyViewProps> = ({ onExit, userLocation, con
         </div>
 
         <button 
-          onClick={() => handleCall('100')} // Standard emergency number for India
+          onClick={() => handleCall('100')}
           className="w-full bg-red-600 text-white h-16 rounded-2xl font-black text-base flex items-center justify-center gap-3 active:scale-95 transition-all shadow-lg shadow-red-900/40"
         >
           <Phone size={20} fill="currentColor" />
@@ -133,7 +168,6 @@ const EmergencyView: React.FC<EmergencyViewProps> = ({ onExit, userLocation, con
 
         {/* Enhanced Hold to Cancel Button */}
         <div className="relative h-20 w-full rounded-2xl overflow-hidden group">
-          {/* Progress Ring / Border effect */}
           <div className="absolute inset-0 z-0">
              <svg className="w-full h-full" preserveAspectRatio="none">
                 <rect 

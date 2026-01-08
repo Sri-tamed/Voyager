@@ -1,12 +1,13 @@
 
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { Search, MapPin, Landmark, Navigation2, Target, X, ShieldCheck, HeartPulse, Building2, Info, Star, PhoneCall, AlertTriangle, DownloadCloud, CheckCircle2, CarFront } from 'lucide-react';
-import { SafetyStatus, Location } from '../types';
+import { Search, MapPin, Landmark, Navigation2, Target, X, ShieldCheck, HeartPulse, Building2, Info, Star, PhoneCall, AlertTriangle, DownloadCloud, CheckCircle2, CarFront, Share2, Loader2 } from 'lucide-react';
+import { SafetyStatus, Location, EmergencyContact } from '../types';
 import { MOCK_DANGER_ZONES } from '../constants';
 
 interface MapViewProps {
   userLocation: Location | null;
   status: SafetyStatus;
+  contacts: EmergencyContact[];
 }
 
 interface LandmarkData {
@@ -98,7 +99,7 @@ const KOLKATA_LANDMARKS: LandmarkData[] = [
   }
 ];
 
-const MapView: React.FC<MapViewProps> = ({ userLocation, status }) => {
+const MapView: React.FC<MapViewProps> = ({ userLocation, status, contacts }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const userMarkerRef = useRef<any>(null);
@@ -111,6 +112,15 @@ const MapView: React.FC<MapViewProps> = ({ userLocation, status }) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
   const [showTraffic, setShowTraffic] = useState(false);
+  const [isLiveSharing, setIsLiveSharing] = useState(false);
+  
+  const shareTimerRef = useRef<any>(null);
+  const locationRef = useRef<Location | null>(userLocation);
+
+  // Update location ref whenever userLocation changes without triggering re-effects
+  useEffect(() => {
+    locationRef.current = userLocation;
+  }, [userLocation]);
 
   const categories = [
     { id: 'safety', label: 'Safe Hubs', icon: <ShieldCheck size={14} /> },
@@ -126,6 +136,28 @@ const MapView: React.FC<MapViewProps> = ({ userLocation, status }) => {
       return matchesSearch && matchesCategory;
     });
   }, [searchQuery, selectedCategory]);
+
+  // Map Recurring Share Logic - Every 60 seconds
+  useEffect(() => {
+    if (isLiveSharing && contacts.length > 0) {
+      const share = () => {
+        if (!locationRef.current) return;
+        const primary = contacts[0];
+        const link = `https://www.google.com/maps?q=${locationRef.current.lat},${locationRef.current.lng}`;
+        const msg = encodeURIComponent(`📍 VOYAGER LIVE FEED: I'm currently here: ${link}`);
+        window.open(`https://wa.me/${primary.phone.replace(/\D/g, '')}?text=${msg}`, '_blank');
+      };
+
+      // Initial share
+      share();
+      
+      // Set interval to 60 seconds
+      shareTimerRef.current = setInterval(share, 60000);
+    } else {
+      if (shareTimerRef.current) clearInterval(shareTimerRef.current);
+    }
+    return () => { if (shareTimerRef.current) clearInterval(shareTimerRef.current); };
+  }, [isLiveSharing, contacts]);
 
   useEffect(() => {
     if (!mapContainerRef.current) return;
@@ -164,7 +196,6 @@ const MapView: React.FC<MapViewProps> = ({ userLocation, status }) => {
     initMap();
   }, []);
 
-  // Handle Traffic Layer Toggle
   useEffect(() => {
     // @ts-ignore
     const L = window.L;
@@ -172,8 +203,6 @@ const MapView: React.FC<MapViewProps> = ({ userLocation, status }) => {
 
     if (showTraffic) {
       if (!trafficLayerRef.current) {
-        // Using OpenStreetMap France's HOT layer as a proxy for high-contrast traffic/transit focus
-        // In a production environment with a key, we'd use TomTom or Mapbox Traffic tiles.
         trafficLayerRef.current = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
           maxZoom: 19,
           opacity: 0.5,
@@ -306,7 +335,6 @@ const MapView: React.FC<MapViewProps> = ({ userLocation, status }) => {
             </button>
           )}
 
-          {/* Search Dropdown */}
           {isSearching && (
             <div className="absolute top-full left-0 right-0 mt-3 bg-teal-950/95 backdrop-blur-3xl border border-white/10 rounded-3xl overflow-hidden shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8)] animate-in fade-in slide-in-from-top-2 duration-300 max-h-[60vh] overflow-y-auto">
               <div className="flex gap-2 p-4 border-b border-white/5 overflow-x-auto no-scrollbar">
@@ -379,6 +407,13 @@ const MapView: React.FC<MapViewProps> = ({ userLocation, status }) => {
                 <CarFront size={24} className={showTraffic ? 'text-white' : 'text-teal-400'} />
               </button>
               <button 
+                onClick={() => setIsLiveSharing(!isLiveSharing)}
+                className={`w-14 h-14 ${isLiveSharing ? 'bg-emerald-500' : 'bg-teal-950/80 backdrop-blur-xl'} rounded-2xl flex items-center justify-center border border-white/10 shadow-xl active:scale-90 transition-all`}
+                title="Toggle Recurring Share"
+              >
+                {isLiveSharing ? <Loader2 size={24} className="text-white animate-spin" /> : <Share2 size={24} className="text-teal-400" />}
+              </button>
+              <button 
                 onClick={handleDownload}
                 disabled={isDownloading}
                 className={`w-14 h-14 bg-teal-950/80 backdrop-blur-xl rounded-2xl flex items-center justify-center border border-white/10 shadow-xl active:scale-90 transition-all ${isDownloading ? 'opacity-50' : ''}`}
@@ -390,7 +425,6 @@ const MapView: React.FC<MapViewProps> = ({ userLocation, status }) => {
         )}
       </div>
 
-      {/* LANDMARK BOTTOM SHEET */}
       {selectedLandmark && (
         <div className="absolute inset-x-0 bottom-0 z-[3000] animate-in slide-in-from-bottom-full duration-500 ease-out">
            <div className="absolute -top-[100vh] inset-x-0 h-[100vh] bg-black/40 backdrop-blur-[2px]" onClick={() => setSelectedLandmark(null)} />
@@ -466,13 +500,12 @@ const MapView: React.FC<MapViewProps> = ({ userLocation, status }) => {
         </div>
       )}
 
-      {/* Default Bottom Stats Card */}
       {!isSearching && !selectedLandmark && (
         <div className="absolute bottom-28 left-6 right-6 z-[1000] flex flex-col gap-3 animate-in slide-in-from-bottom-4 duration-700">
           <div className="bg-teal-900/90 backdrop-blur-2xl p-6 rounded-[2.5rem] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
             <div className="flex justify-between items-center mb-3">
               <h4 className="text-xs font-black uppercase tracking-[0.2em] text-white">
-                {showTraffic ? 'Live Traffic Overwatch' : 'Central Kolkata Sector'}
+                {isLiveSharing ? 'Live Telemetry Active' : showTraffic ? 'Live Traffic Overwatch' : 'Central Kolkata Sector'}
               </h4>
               <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
                 <Target size={12} className="text-emerald-400" />
@@ -480,7 +513,7 @@ const MapView: React.FC<MapViewProps> = ({ userLocation, status }) => {
               </div>
             </div>
             <p className="text-[11px] text-teal-100/50 leading-relaxed font-bold italic">
-              {showTraffic ? 'Emphasizing high-congestion zones and transit corridors.' : 'Voyager SW active. Map tiles are being cached for offline safety.'}
+              {isLiveSharing ? `Updating ${contacts[0]?.name || 'contacts'} with live coordinates every 60s.` : showTraffic ? 'Emphasizing high-congestion zones and transit corridors.' : 'Voyager SW active. Map tiles are being cached for offline safety.'}
             </p>
           </div>
         </div>

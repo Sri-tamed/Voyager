@@ -1,7 +1,8 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: "AIzaSyBebS-fAiQbYyHCP__DrdAWTNkBatumMTU" || process.env.API_KEY || "" });
+// Always use the API key directly from process.env.API_KEY
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const getSafetyAdvice = async (locationName: string) => {
   try {
@@ -15,6 +16,7 @@ export const getSafetyAdvice = async (locationName: string) => {
         maxOutputTokens: 200
       }
     });
+    // response.text is a property, not a method.
     return response.text || "• Stay aware of your surroundings.\n• Keep your phone charged.\n• Trust your instincts.";
   } catch (error) {
     console.error("Gemini Error:", error);
