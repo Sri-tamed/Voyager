@@ -1,0 +1,7 @@
+{
+  "name": "Voyager Safety",
+  "description": "A premium, minimal travel-safety companion designed to provide confidence and security for travelers in unfamiliar locations.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
