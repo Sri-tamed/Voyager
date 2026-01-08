@@ -7,16 +7,38 @@ import OnboardingView from './views/OnboardingView';
 import EmergencyView from './views/EmergencyView';
 import ProfileView from './views/ProfileView';
 import SettingsView from './views/SettingsView';
-import { View, SafetyStatus, Location } from './types';
-import { MOCK_DANGER_ZONES, COLORS } from './constants';
+import { View, SafetyStatus, Location, EmergencyContact } from './types';
+import { MOCK_DANGER_ZONES, EMERGENCY_CONTACTS as INITIAL_CONTACTS } from './constants';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('onboarding');
   const [status, setStatus] = useState<SafetyStatus>(SafetyStatus.SAFE);
   const [userLocation, setUserLocation] = useState<Location | null>(null);
   const [showNotification, setShowNotification] = useState<string | null>(null);
+  const [contacts, setContacts] = useState<EmergencyContact[]>([]);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Initialize contacts from localStorage or defaults
+  useEffect(() => {
+    const saved = localStorage.getItem('voyager_contacts');
+    if (saved) {
+      try {
+        setContacts(JSON.parse(saved));
+      } catch (e) {
+        setContacts(INITIAL_CONTACTS);
+      }
+    } else {
+      setContacts(INITIAL_CONTACTS);
+    }
+  }, []);
+
+  // Save contacts whenever they change
+  useEffect(() => {
+    if (contacts.length > 0) {
+      localStorage.setItem('voyager_contacts', JSON.stringify(contacts));
+    }
+  }, [contacts]);
 
   useEffect(() => {
     audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3');
@@ -83,12 +105,12 @@ const App: React.FC = () => {
 
   const renderView = () => {
     switch(currentView) {
-      case 'home': return <HomeView status={status} onEmergencyTrigger={enterEmergency} userLocation={userLocation} />;
+      case 'home': return <HomeView status={status} onEmergencyTrigger={enterEmergency} userLocation={userLocation} contacts={contacts} />;
       case 'map': return <MapView userLocation={userLocation} status={status} />;
-      case 'emergency': return <EmergencyView onExit={exitEmergency} />;
-      case 'profile': return <ProfileView />;
+      case 'emergency': return <EmergencyView onExit={exitEmergency} userLocation={userLocation} contacts={contacts} />;
+      case 'profile': return <ProfileView contacts={contacts} setContacts={setContacts} />;
       case 'settings': return <SettingsView />;
-      default: return <HomeView status={status} onEmergencyTrigger={enterEmergency} userLocation={userLocation} />;
+      default: return <HomeView status={status} onEmergencyTrigger={enterEmergency} userLocation={userLocation} contacts={contacts} />;
     }
   };
 

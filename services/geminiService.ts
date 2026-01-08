@@ -7,15 +7,17 @@ export const getSafetyAdvice = async (locationName: string) => {
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Provide 3 very short, practical safety tips for a traveler in ${locationName}. Focus on confidence and situational awareness. Keep it minimal and professional.`,
+      contents: `Provide 3 very short, actionable, and professional safety tips for a traveler in ${locationName}. 
+      Return only the tips, each on a new line starting with a bullet point (•). 
+      Focus on situational awareness and confidence. No introductory text.`,
       config: {
-        temperature: 0.5,
-        maxOutputTokens: 150
+        temperature: 0.7,
+        maxOutputTokens: 200
       }
     });
-    return response.text || "Stay aware of your surroundings and keep your phone charged.";
+    return response.text || "• Stay aware of your surroundings.\n• Keep your phone charged.\n• Trust your instincts.";
   } catch (error) {
     console.error("Gemini Error:", error);
-    return "Stay vigilant in unfamiliar areas and keep emergency contacts ready.";
+    return "• Stay vigilant in unfamiliar areas.\n• Keep emergency contacts ready.\n• Maintain a low profile.";
   }
 };

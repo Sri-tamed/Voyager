@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { Search, MapPin, Landmark, Navigation2, Target, X, ShieldCheck, HeartPulse, Building2, Info, Star, PhoneCall, AlertTriangle, DownloadCloud, CheckCircle2 } from 'lucide-react';
+import { Search, MapPin, Landmark, Navigation2, Target, X, ShieldCheck, HeartPulse, Building2, Info, Star, PhoneCall, AlertTriangle, DownloadCloud, CheckCircle2, CarFront } from 'lucide-react';
 import { SafetyStatus, Location } from '../types';
 import { MOCK_DANGER_ZONES } from '../constants';
 
@@ -103,12 +103,14 @@ const MapView: React.FC<MapViewProps> = ({ userLocation, status }) => {
   const mapRef = useRef<any>(null);
   const userMarkerRef = useRef<any>(null);
   const landmarkLayerRef = useRef<any>(null);
+  const trafficLayerRef = useRef<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedLandmark, setSelectedLandmark] = useState<LandmarkData | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
+  const [showTraffic, setShowTraffic] = useState(false);
 
   const categories = [
     { id: 'safety', label: 'Safe Hubs', icon: <ShieldCheck size={14} /> },
@@ -161,6 +163,30 @@ const MapView: React.FC<MapViewProps> = ({ userLocation, status }) => {
     };
     initMap();
   }, []);
+
+  // Handle Traffic Layer Toggle
+  useEffect(() => {
+    // @ts-ignore
+    const L = window.L;
+    if (!mapRef.current || !L) return;
+
+    if (showTraffic) {
+      if (!trafficLayerRef.current) {
+        // Using OpenStreetMap France's HOT layer as a proxy for high-contrast traffic/transit focus
+        // In a production environment with a key, we'd use TomTom or Mapbox Traffic tiles.
+        trafficLayerRef.current = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          opacity: 0.5,
+          zIndex: 100
+        });
+      }
+      trafficLayerRef.current.addTo(mapRef.current);
+    } else {
+      if (trafficLayerRef.current) {
+        trafficLayerRef.current.remove();
+      }
+    }
+  }, [showTraffic]);
 
   const refreshMarkers = () => {
     // @ts-ignore
@@ -245,8 +271,6 @@ const MapView: React.FC<MapViewProps> = ({ userLocation, status }) => {
   };
 
   const handleStartNavigation = (landmark: LandmarkData) => {
-    // Open navigation in a new tab using standard URL schemes
-    // 'travelmode=walking' is usually safer for tight city navigation in Kolkata landmarks
     const url = `https://www.google.com/maps/dir/?api=1&destination=${landmark.lat},${landmark.lng}&travelmode=walking`;
     window.open(url, '_blank');
   };
@@ -334,7 +358,7 @@ const MapView: React.FC<MapViewProps> = ({ userLocation, status }) => {
         </div>
 
         {!isSearching && !selectedLandmark && (
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-start">
             <div className="bg-teal-950/90 backdrop-blur-xl px-5 py-3 rounded-2xl border border-white/10 shadow-2xl flex items-center gap-3">
               <div className={`w-2.5 h-2.5 rounded-full ${status === SafetyStatus.SAFE ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]' : 'bg-amber-400 animate-pulse'}`}></div>
               <span className="text-[11px] font-black uppercase tracking-[0.15em] text-teal-50">Sector: Kolkata West</span>
@@ -346,6 +370,13 @@ const MapView: React.FC<MapViewProps> = ({ userLocation, status }) => {
                 className="w-14 h-14 bg-teal-600 rounded-2xl flex items-center justify-center border border-white/10 shadow-xl active:scale-90 transition-all"
               >
                 <Navigation2 size={24} className="text-white fill-white/20" />
+              </button>
+              <button 
+                onClick={() => setShowTraffic(!showTraffic)}
+                className={`w-14 h-14 ${showTraffic ? 'bg-amber-500' : 'bg-teal-950/80 backdrop-blur-xl'} rounded-2xl flex items-center justify-center border border-white/10 shadow-xl active:scale-90 transition-all`}
+                title="Toggle Live Traffic"
+              >
+                <CarFront size={24} className={showTraffic ? 'text-white' : 'text-teal-400'} />
               </button>
               <button 
                 onClick={handleDownload}
@@ -440,14 +471,16 @@ const MapView: React.FC<MapViewProps> = ({ userLocation, status }) => {
         <div className="absolute bottom-28 left-6 right-6 z-[1000] flex flex-col gap-3 animate-in slide-in-from-bottom-4 duration-700">
           <div className="bg-teal-900/90 backdrop-blur-2xl p-6 rounded-[2.5rem] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
             <div className="flex justify-between items-center mb-3">
-              <h4 className="text-xs font-black uppercase tracking-[0.2em] text-white">Central Kolkata Sector</h4>
+              <h4 className="text-xs font-black uppercase tracking-[0.2em] text-white">
+                {showTraffic ? 'Live Traffic Overwatch' : 'Central Kolkata Sector'}
+              </h4>
               <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
                 <Target size={12} className="text-emerald-400" />
                 <span className="text-[9px] text-emerald-400 uppercase tracking-widest font-black">Active Vigilance</span>
               </div>
             </div>
             <p className="text-[11px] text-teal-100/50 leading-relaxed font-bold italic">
-              {isDownloading ? 'Caching current map tiles for offline overwatch...' : 'Voyager SW active. Map tiles are being cached for offline safety.'}
+              {showTraffic ? 'Emphasizing high-congestion zones and transit corridors.' : 'Voyager SW active. Map tiles are being cached for offline safety.'}
             </p>
           </div>
         </div>

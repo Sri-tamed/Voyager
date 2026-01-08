@@ -1,5 +1,5 @@
 
-import { DangerZone } from './types';
+import { DangerZone, EmergencyContact } from './types';
 
 export const MOCK_DANGER_ZONES: DangerZone[] = [
   {
@@ -14,6 +14,14 @@ export const MOCK_DANGER_ZONES: DangerZone[] = [
     location: { lat: 22.5392, lng: 88.3662 },
     radius: 500
   }
+];
+
+export const EMERGENCY_CONTACTS: EmergencyContact[] = [
+  { id: '1', name: 'Aarav Sharma', phone: '+919876543210', relation: 'Brother', avatar: 'https://i.pravatar.cc/150?u=aarav' },
+  { id: '2', name: 'Priya Das', phone: '+918765432109', relation: 'Partner', avatar: 'https://i.pravatar.cc/150?u=priya' },
+  { id: '3', name: 'Vikram Roy', phone: '+917654321098', relation: 'Father', avatar: 'https://i.pravatar.cc/150?u=vikram' },
+  { id: '4', name: 'Ananya Sen', phone: '+916543210987', relation: 'Sister', avatar: 'https://i.pravatar.cc/150?u=ananya' },
+  { id: '5', name: 'Rohan Mehta', phone: '+915432109876', relation: 'Best Friend', avatar: 'https://i.pravatar.cc/150?u=rohan' }
 ];
 
 export const COLORS = {

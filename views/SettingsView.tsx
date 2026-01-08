@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { SlidersHorizontal, Eye, Volume2, Map as MapIcon, Globe, Info } from 'lucide-react';
+import { SlidersHorizontal, Eye, Volume2, Map as MapIcon, Globe, Info, CarFront } from 'lucide-react';
 
 const SettingsView: React.FC = () => {
   return (
@@ -15,6 +15,7 @@ const SettingsView: React.FC = () => {
           <h3 className="text-xs uppercase tracking-[0.2em] font-bold text-teal-400 px-2">Map Visibility</h3>
           <div className="bg-teal-900/20 rounded-2xl border border-teal-800/40 p-4 space-y-4">
             <ToggleItem icon={<MapIcon size={18} />} label="Show Danger Zones" defaultChecked />
+            <ToggleItem icon={<CarFront size={18} />} label="Live Traffic Overlays" />
             <ToggleItem icon={<Eye size={18} />} label="Heatmap Intensity" defaultChecked />
             <ToggleItem icon={<Globe size={18} />} label="Satellite Overlays" />
           </div>

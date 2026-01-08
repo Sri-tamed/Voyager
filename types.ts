@@ -11,6 +11,14 @@ export interface DangerZone {
   radius: number; // in meters
 }
 
+export interface EmergencyContact {
+  id: string;
+  name: string;
+  phone: string;
+  relation: string;
+  avatar?: string;
+}
+
 export enum SafetyStatus {
   SAFE = 'SAFE',
   CAUTION = 'CAUTION',
