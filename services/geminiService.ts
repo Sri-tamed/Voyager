@@ -2,7 +2,7 @@
 import { GoogleGenAI } from "@google/genai";
 
 // Always use the API key directly from process.env.API_KEY
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: "AIzaSyDfISbhaWNxWgPxGQpK815MtqZSdD7LnjQ" });
 
 export const getSafetyAdvice = async (locationName: string) => {
   try {
