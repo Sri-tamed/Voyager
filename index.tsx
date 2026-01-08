@@ -1,4 +1,3 @@
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
@@ -8,14 +7,17 @@ if (!rootElement) {
   throw new Error("Could not find root element to mount to");
 }
 
-// Register Service Worker for offline map caching
+// ✅ Register Service Worker for offline map caching
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').then(registration => {
-      console.log('Voyager SW registered: ', registration);
-    }).catch(registrationError => {
-      console.log('Voyager SW registration failed: ', registrationError);
-    });
+    navigator.serviceWorker
+      .register('/sw.js') // 👈 FIXED PATH
+      .then(registration => {
+        console.log('Voyager SW registered:', registration);
+      })
+      .catch(error => {
+        console.warn('Voyager SW registration failed:', error);
+      });
   });
 }
 
